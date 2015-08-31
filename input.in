@@ -1,0 +1,149 @@
+/*Input file*/
+RUN = 1
+DIM = 250
+FUNCTION = 0
+KMAX = 5
+TMAX = 500000
+Q = 2.8
+RADII = 0.1
+RADII_T_FLAG = 1
+AVAL_MAX = 2000
+RHO = 0.5
+EPSILON = 1E-4
+METHOD = 8
+P=0
+VNS_POP = 50
+ECO_STEP = 5
+EVO_STEP = 50
+G_MAX = 10000
+PC = 0.9
+
+
+/* RUN is the number of times the ECO alg will run.*/
+/* DIM is the number of problem variables. */
+/* FUNCTION represents the problem to be solved. The current options are:*/
+/*N	 Name	                		Range		Min        */
+/*0:  Rastrigin  			[  -5.12,    5.12]	0	   */
+/*1:  Schaffer F7 			[-100.00,  100.00]	0	   */
+/*2:  Griewank   			[-600.00,  600.00]	0	   */
+/*3:  Ackley     			[ -32.00,   32.00]	0	   */
+/*4:  Rosenbrock 			[ -30.00,   30.00]	0	   */
+/*5:  Sphere     			[-100.00,  100.00]	0	   */
+/*6:  Molecular Potential Energy 	[   0.00,    5.00]	0	   */
+/*7:  Schaffer F6			[-100.00,  100.00]	0	   */
+/*8:  Generalized Schwefels 2.26	[-500.00,  500.00]	0	   */
+/*9:  Step 				[   -100,     100]	0	   */
+/*11: Generalized Penalized function #1 [    -50,      50]  1.57e-32	   */
+/*12: Levy				[ -10.00,   10.00]	0	   */
+/*13: Zakharov  			[  -5.00,   10.00]	0	   */
+/*14: Egg Holder			[-512.00,  512.00]     	?	   */
+/*15: Holzman				[ -10.00,   10.00]	0	   */
+/*16: Michalewitz			[   0.00,      PI]    -0.966*n	   */
+/*17: Generalized Penalized function #2 [    -50,      50]   1.34e-32	   */
+/*18: Powell				[ -10.00,   10.00]	0	   */
+/*19: Rana				[-512.00,  512.00]	?	   */
+/*20: Shubert		    		[  -4.00,    5.00]    -24.06       */
+/*21: StretchedV 			[-10.00,    10.00]	0	   */
+/*22: Multimod				[-10.00,    10.00]	0	   */
+/*23: Schwefel's function 2.22		[    -10,      10]	0	   */
+/*25: Shifited Sphere			[   -100,     100]    -450	   */
+/*26: Shifted Schwefel Problem 2.21	[   -100,     100]    -450	   */
+/*27: Shifted Rosenbrock		[   -100,     100]     390	   */
+/*28: Shifted Rastrigin			[  -5.12,    5.12]    -330	   */
+/*30: Shifted Ackley			[ -32.00,   32.00]    -180	   */ 
+/*31: Shifted Schwefel 2.22		[ -10.00,   10.00]    -140	   */ 
+/*32: Shifted Schwefel 1.2		[-64.536,  65.536]	0	   */ 
+/*33: Shifted Extended_f10		[ -100,       100]	0	   */ 
+/*34: Shifted Bohachevsky		[ -15,         15]	0	   */ 
+/*35: Shifted Schaffer			[ -100,       100]	0	   */ 
+/*36: Hybrid 1				[ -100,       100]	0	   */ 
+/*37: Hybrid 2				[   -5,         5]	0	   */ 
+/*38: Hybrid 3				[  -10,        10]	0	   */ 
+/*39: Hybrid 4				[ -100,       100]	0	   */ 
+/*40: Hybrid 5				[ -100,       100]	0	   */ 
+/*41: Hybrid 6				[ -100,       100]	0	   */ 
+/*42: Hybrid 7				[   -5,         5]	0	   */ 
+/*43: Hybrid 8				[  -10,        10]	0	   */ 
+
+	/****VNS PARAMETERS****/
+/*K is the number of neighbourhood*/
+/*TMAX is the number os iterations*/
+/*Q is the geometric progresion rate*/
+/*RADII is the radio aplied, the initial value of geometric progresion Q*/
+/*RADII_T_FLAG is the flag for radii type test:
+	0 => 	r[k-1] < pk < r[k]*/
+	1 => 	pk < r[k]*/
+/*AVAL_MAX for BVNS, the number of avaliation used in local search
+/*METHOD	the algorithm to run*/
+/*	2 =>	HJ*/
+/*	3 =>	BVNS*/
+/*	4 =>	RVNS*/
+/*	5 =>	BVNS_NM */
+/*	6 =>	PRVNS*/
+/*	7 =>	NM*/
+/*	8 =>	PPRVNS*/
+/*P the metric used:*/
+	/*0 =>	l_inf (shebchev)*/
+	/*1 =>	l1	(manhathan)*/
+	/*2 =>	l2	(euclidian)*/
+/* VNS_POP population size for PVNS. */
+/* G_MAX the max generation for PVNS, must be balanced with AVAL_MAX. G_MAX = AVAL_MAX/VNS_POP.
+/* PC Cross-Over probability used in PVNS */
+
+	/****HOOKE AND JEEVES PARAMETERS****/
+/*ITERMAX = */
+/*RHO = */
+/*EPSILON = */
+/*     rho	   {a double}  This is a user-supplied convergence */
+/*		   parameter (more detail below), which should be  */
+/*		   set to a value between 0.0 and 1.0.	Larger	   */
+/*		   values of rho give greater probability of	   */
+/*		   convergence on highly nonlinear functions, at a */
+/*		   cost of more function evaluations.  Smaller	   */
+/*		   values of rho reduces the number of evaluations */
+/*		   (and the program running time), but increases   */
+/*		   the risk of nonconvergence.	See below.	   */
+/*     epsilon	   {a double}  This is the criterion for halting   */
+/*		   the search for a minimum.  When the algorithm   */
+/*		   begins to make less and less progress on each   */
+/*		   iteration, it checks the halting criterion: if  */
+/*		   the stepsize is below epsilon, terminate the    */
+/*		   iteration and return the current best estimate  */
+/*		   of the minimum.  Larger values of epsilon (such */
+/*		   as 1.0e-4) give quicker running time, but a	   */
+/*		   less accurate estimate of the minimum.  Smaller */
+/*		   values of epsilon (such as 1.0e-7) give longer  */
+/*		   running time, but a more accurate estimate of   */
+/*		   the minimum. 				   */
+/*     itermax	   {an integer}  A second, rarely used, halting    */
+/*		   criterion.  If the algorithm uses >= itermax    */
+/*		   iterations, halt.				   */
+
+/* rho, the algorithm convergence control			   */
+/*	The algorithm works by taking "steps" from one estimate of */
+/*    a minimum, to another (hopefully better) estimate.  Taking   */
+/*    big steps gets to the minimum more quickly, at the risk of   */
+/*    "stepping right over" an excellent point.  The stepsize is   */
+/*    controlled by a user supplied parameter called rho.  At each */
+/*    iteration, the stepsize is multiplied by rho  (0 < rho < 1), */
+/*    so the stepsize is successively reduced.			   */
+/*	Small values of rho correspond to big stepsize changes,    */
+/*    which make the algorithm run more quickly.  However, there   */
+/*    is a chance (especially with highly nonlinear functions)	   */
+/*    that these big changes will accidentally overlook a	   */
+/*    promising search vector, leading to nonconvergence.	   */
+/*	Large values of rho correspond to small stepsize changes,  */
+/*    which force the algorithm to carefully examine nearby points */
+/*    instead of optimistically forging ahead.	This improves the  */
+/*    probability of convergence.				   */
+/*	The stepsize is reduced until it is equal to (or smaller   */
+/*    than) epsilon.  So the number of iterations performed by	   */
+/*    Hooke-Jeeves is determined by rho and epsilon:		   */
+/*	    rho**(number_of_iterations) = epsilon		   */
+/*	In general it is a good idea to set rho to an aggressively */
+/*    small value like 0.5 (hoping for fast convergence).  Then,   */
+/*    if the user suspects that the reported minimum is incorrect  */
+/*    (or perhaps not accurate enough), the program can be run	   */
+/*    again with a larger value of rho such as 0.85, using the	   */
+/*    result of the first minimization as the starting guess to    */
+/*    begin the second minimization.				   */

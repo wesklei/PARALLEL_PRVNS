@@ -1,0 +1,192 @@
+***VNS PARAMETERS***
+RUNS = 30
+DIM = 250
+FUNCTION = Schaffer F6
+METHOD = 4
+****************
+KMAX = 5
+TMAX = 500000
+Q = 2.800000
+RADII = 0.100000
+RADII_T_FLAG = 1
+METRIC P = 0
+VNS_POP = 50
+ECO_STEP = 50
+EVO_STEP = 100
+****************
+***HOOKE AND JEEVES PARAMETERS***
+AVAL_MAX = 400
+RHO = 0.500000
+EPSILON = 0.000100
+****************
+Valores de raio usando PG e razao 2.800000:
+k_1 => radii=0.100000 
+k_2 => radii=0.280000 
+k_3 => radii=0.784000 
+k_4 => radii=2.195200 
+k_5 => radii=6.146560 
+
+==RUN: 1
+Total number of avaliation: 500000
+Best solution found == 121.518
+Time: == 10 seconds
+
+==RUN: 2
+Total number of avaliation: 500000
+Best solution found == 122.066
+Time: == 11 seconds
+
+==RUN: 3
+Total number of avaliation: 500000
+Best solution found == 121.432
+Time: == 10 seconds
+
+==RUN: 4
+Total number of avaliation: 500000
+Best solution found == 123.291
+Time: == 11 seconds
+
+==RUN: 5
+Total number of avaliation: 500000
+Best solution found == 121.347
+Time: == 10 seconds
+
+==RUN: 6
+Total number of avaliation: 500000
+Best solution found == 122.767
+Time: == 11 seconds
+
+==RUN: 7
+Total number of avaliation: 500000
+Best solution found == 124.627
+Time: == 11 seconds
+
+==RUN: 8
+Total number of avaliation: 500000
+Best solution found == 121.909
+Time: == 10 seconds
+
+==RUN: 9
+Total number of avaliation: 500000
+Best solution found == 119.418
+Time: == 11 seconds
+
+==RUN: 10
+Total number of avaliation: 500000
+Best solution found == 122.395
+Time: == 10 seconds
+
+==RUN: 11
+Total number of avaliation: 500000
+Best solution found == 121.897
+Time: == 11 seconds
+
+==RUN: 12
+Total number of avaliation: 500000
+Best solution found == 123.396
+Time: == 10 seconds
+
+==RUN: 13
+Total number of avaliation: 500000
+Best solution found == 123.292
+Time: == 11 seconds
+
+==RUN: 14
+Total number of avaliation: 500000
+Best solution found == 120.768
+Time: == 10 seconds
+
+==RUN: 15
+Total number of avaliation: 500000
+Best solution found == 123.773
+Time: == 11 seconds
+
+==RUN: 16
+Total number of avaliation: 500000
+Best solution found == 121.13
+Time: == 10 seconds
+
+==RUN: 17
+Total number of avaliation: 500000
+Best solution found == 122.957
+Time: == 11 seconds
+
+==RUN: 18
+Total number of avaliation: 500000
+Best solution found == 123.416
+Time: == 10 seconds
+
+==RUN: 19
+Total number of avaliation: 500000
+Best solution found == 123.747
+Time: == 11 seconds
+
+==RUN: 20
+Total number of avaliation: 500000
+Best solution found == 121.318
+Time: == 10 seconds
+
+==RUN: 21
+Total number of avaliation: 500000
+Best solution found == 121.726
+Time: == 11 seconds
+
+==RUN: 22
+Total number of avaliation: 500000
+Best solution found == 123.58
+Time: == 11 seconds
+
+==RUN: 23
+Total number of avaliation: 500000
+Best solution found == 122.741
+Time: == 10 seconds
+
+==RUN: 24
+Total number of avaliation: 500000
+Best solution found == 121.947
+Time: == 11 seconds
+
+==RUN: 25
+Total number of avaliation: 500000
+Best solution found == 122.544
+Time: == 10 seconds
+
+==RUN: 26
+Total number of avaliation: 500000
+Best solution found == 122.556
+Time: == 11 seconds
+
+==RUN: 27
+Total number of avaliation: 500000
+Best solution found == 120.947
+Time: == 10 seconds
+
+==RUN: 28
+Total number of avaliation: 500000
+Best solution found == 124.135
+Time: == 11 seconds
+
+==RUN: 29
+Total number of avaliation: 500000
+Best solution found == 123.397
+Time: == 11 seconds
+
+==RUN: 30
+Total number of avaliation: 500000
+Best solution found == 122.447
+Time: == 10 seconds
+FO Standard Deviation: 1.1373875547
+Time Standard Deviation: 0.498888
+Iteration Standard Deviation:  0.000
+FO mean: 122.4160739872
+Time mean: 10.533333
+Iteration mean: 500000.000
+FO best: 119.4181198510
+Time best: 10.000000
+Iteration count when found best: 499963
+Iteration best: 500000
+End running
+
+real	5m16.209s
+user	5m16.453s
+sys	0m0.010s
