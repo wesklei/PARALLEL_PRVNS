@@ -1,0 +1,48 @@
+Articles 
+
+
+Should Every Man be an Island?
+Island number and population size for popular benchmark functions
+
+See [3, 29] for speed-up analysis.
+
+"These studies show a continued interest in population size
+and island number. Taken together, they recommend first
+determining the smallest population size, n, that can make
+progress on the problem of interest. Next, create as many
+islands, m, with n individuals per island as time and compu-
+tational power allow. Finally, run this setup with no more
+than 5% of the population migrating, and migration occur-
+ring no more than once every 5 generations. How well this
+rule generalizes, or if there exists an adaptive algorithm that
+unequivocally beats it remains unknown. We aim to evalu-
+ate population size and island number while holding migra-
+tion size and interval constant in a non-adaptive GA"
+
+Fernandez et al. [13] finds topology to have
+little effect on island-model genetic programming, but ring
+and random topologies perform slightly better than mesh
+topologies.
+
+In our implementation,
+the top 5% of the population (rounded up to the next largest
+whole number) migrates once every 10 generations.
+
+Multiple islands perform better on all
+benchmarks compared to single-population models
+
+
+we find that island-model
+performance is optimal with surprisingly few individuals per
+island
+
+We hypothesize that emIsland ’s superior performance is
+due to maintenance of diversity and preservation of fit indi-
+viduals. Though migration occurs every generation in emIs-
+land, the low connectivity prevents relatively fit individuals
+from quickly dominating all the islands. For example, it
+would take one individual 64 generations to reach every island in the 64-island emIsland due to the topology of the
+one-directional ring. Fit individuals are preserved due to the
+fact that a mutant or child of crossover takes over an island
+only if its fitness is superior to the individual already on the
+island. These hypotheses will be investigated in future work.
