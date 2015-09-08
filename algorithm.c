@@ -2,7 +2,7 @@
         Description: The ANSI C code of the PRVNS approach
         Programmer:  Wesklei Migliorini
         E-mail:      wesklei.m@gmail.com
-        Date:	     04/11/2014
+        Date:	     01/09/2015
         Lisence:     Free
         Note:        The system was developed using Linux.
         To compile:  Type: make
@@ -29,8 +29,6 @@ typedef int bool;
 #include <time.h>
 #include "mersenne.h"
 #include "functions.c"
-#include "hooke.c"
-#include "nelmin.c"
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -99,15 +97,9 @@ bool radiiLess(double *max, double *r, int know);
 bool checkisLbUb(double *x, const int DIM,double lb, double ub);
 void getRange(double lb, double ub, double *lower, double *upper, double new_value);
 void shake(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p, int max_changes, double delta_percent);
-void shake_one(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p);
 bool lp(double* x, double* y, double* r, int know, const int DIM, int RADII_T_FLAG, int p);
 bool lpInf(double* x, double* y, double* r, int know, const int DIM,int RADII_T_FLAG);
 void neighborhoodChange(double* x, double* y, double *fx, const int DIM, int *k, const int FUNCTION, int *best_aval, int *aval, double *fy, int lb, int ub);
-void *HJ(void *arg);//Only Hooke and Jaevees/
-void *BVNS_NM(void *arg);//VNSM com Nelder Mead 
-void *NM(void *arg);//VNSM com Nelder Mead 
-void *RVNS(void *arg);
-void *BVNS(void *arg);
 void *PRVNS(void *arg);
 
 void *PPRVNS(void *arg);//Parallel Populational Reduced VNS
@@ -253,30 +245,9 @@ int main(int argc, char **argv)
 
 		switch (vns_run->METHOD) {
 
-		case 2: //HJ
-
-			sol[i] = HJ((void*)sol[i]);
-			break;
-
-		case 3: //BVNS
-
-			sol[i] = BVNS((void*)sol[i]);
-			break;
-		case 4: //RVNS
-
-			sol[i] = RVNS((void*)sol[i]);
-			break;
-		case 5: //BVNS_NM
-
-			sol[i] = BVNS_NM((void*)sol[i]);
-			break;
 		case 6: //PRVNS
 
 			sol[i] = PRVNS((void*)sol[i]);
-			break;
-		case 7: //NM - Only Nelder Mead
-
-			sol[i] = NM((void*)sol[i]);
 			break;
 		case 8: //PPRVNS
 
@@ -369,7 +340,7 @@ int main(int argc, char **argv)
 	return 0;
 }//end MAIN
 
-void calculateStatistic(pVNS **sol, int maxr){
+void calculateStatistic(pVNS **sol, int maxr){/*{{{*/
 //faz os calculos necessarios, como media, desvio padrao, etc
 
 	int i;
@@ -442,9 +413,9 @@ void calculateStatistic(pVNS **sol, int maxr){
 	printf("Iteration best: %d\n", run_best);
 
 	printf("End running\n");
-}
+}/*}}}*/
 
-void AllocArrays(int* POP_SIZE, int* DIM, double*** pop, double** fo, double** best, double** U)/* Dynamic array allocation */
+void AllocArrays(int* POP_SIZE, int* DIM, double*** pop, double** fo, double** best, double** U)/* Dynamic array allocation *//*{{{*/
 /* mol and sites */
 {
 	int j;
@@ -458,9 +429,9 @@ void AllocArrays(int* POP_SIZE, int* DIM, double*** pop, double** fo, double** b
 	*fo = (double*)malloc (*POP_SIZE*sizeof(double));
 	*best = (double*)malloc (*DIM*sizeof(double));
 	*U = (double*)malloc(*DIM * sizeof(double));
-}
+}/*}}}*/
 
-void freeArrays(int* POP_SIZE, double** pop, double* fo, double* best)/* Free arrays */
+void freeArrays(int* POP_SIZE, double** pop, double* fo, double* best)/* Free arrays *//*{{{*/
 {
 	int i;
 	free(fo);
@@ -471,9 +442,9 @@ void freeArrays(int* POP_SIZE, double** pop, double* fo, double* best)/* Free ar
 	}
 
 	free(pop);
-}
+}/*}}}*/
 
-int getParametersVNS(FILE *file, pVNS *vns)
+int getParametersVNS(FILE *file, pVNS *vns)/*{{{*/
 {
 	int *P,*ECO_STEP,*EVO_STEP,*VNS_POP,*G_MAX,*FUNCTION,*DIM,*RUN;
 	int *KMAX,*TMAX,*AVAL_MAX,*METHOD;
@@ -546,11 +517,9 @@ int getParametersVNS(FILE *file, pVNS *vns)
 
 		return 1;
 	}
-}
+}/*}}}*/
 
-
-
-void showParametersVNS(pVNS *vns)
+void showParametersVNS(pVNS *vns)/*{{{*/
 {
 	printf("***VNS PARAMETERS***\n");
 	printf("RUNS = %d\n", vns->RUN);
@@ -573,9 +542,9 @@ void showParametersVNS(pVNS *vns)
 	printf("RHO = %f\n", vns->RHO);
 	printf("EPSILON = %f\n", vns->EPSILON);
 	printf("****************\n");
-}
+}/*}}}*/
 
-int ffscanf(char *fieldname, FILE *fp, char *format, void** inbuffer)
+int ffscanf(char *fieldname, FILE *fp, char *format, void** inbuffer)/*{{{*/
 {
 	char buffer[100];
 	int len;
@@ -651,567 +620,9 @@ int ffscanf(char *fieldname, FILE *fp, char *format, void** inbuffer)
 	else{
 	       return 0; 
 	}
-}
+}/*}}}*/
 
-void *HJ(void *arg){//Only Hooke and Jaevees
-	
-	pVNS *vns = arg;
-
-	int t = 0,i;
-	bool stop = false;
-	int avalmax_aux=0;
-	double *x;
-	double fx;
-	int run=vns->RUN;
-
-	x = (double*) malloc (vns->DIM * sizeof(double));
-	
-	run = vns->RUN+1;
-
-	t=0;
-	avalmax_aux=0;
-	stop=false;
-	for (i=0; i<vns->DIM;i++) //each dimension
-	{
-		x[i] = randon(vns->LB,vns->UB);
-	
-	}
-	fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t);//initialize fx 
-	avalmax_aux = vns->AVAL_MAX;
-
-    	time (&(vns->solv.stime));
-	while(t < vns->TMAX && !stop){
-		/* t++; */
-
-		if( (vns->TMAX - t) < avalmax_aux){
-			avalmax_aux = vns->TMAX -t;
-		}
-		hooke(vns->DIM, x, x, vns->RHO, vns->EPSILON, avalmax_aux, vns->FUNCTION,&t); 
-		checkisLbUb(x,vns->DIM,vns->LB,vns->UB);
-		/* t = t + hooke_cont; */
-		//change neighborhood, x<= receive the best or the same
-		fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t);
-		/* if(fx == 0.0f){ */
-			/* if(vns->FUNCTION == 8){ */
-			/*        if(-418.0 > fx){ */
-			/* 	printf("Find the best solution before finis2h!\n"); */
-			/* 	stop = true; */
-			/*        }else{ */
-			/* 	       continue; */
-			/*        } */
-			/* }else if(fx < (1E-10)){ */
-			/* printf("Find the best solution before finish!\n"); */
-			/* stop = true; */
-		/* } */
-
-
-			/* printf("Improved with %d avaliation and %.20f value\n",t,fx); */
-
-	}
-
-    	time (&(vns->solv.etime));
-
-	printf("\n==RUN: %d\n",run);
-	printf("Total number of avaliation with HJ: %d\n",t);
-	printf("Best solution found == %g\n",fx);
-
-	vns->solv.c_aval=t;
-	vns->solv.c_aval_best=t;
-	vns->solv.bestfo=fx;
-
-	printf("\n");
-	
-	free(x);
-	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
-
-       return (void*)arg;
-	
-}
-
-void *NM(void *arg){//Only Nelder Mead
-	
-	pVNS *vns = arg;
-
-	int t = 0,i;
-	bool stop = false;
-	double *x;
-	int nelmin_cont = 0;
-	double *simplex;
-	int num_restart = 0;
-	double stop_condition = 1E-20;
-	int ifault = 0;
-	double fx = 0;
-	int run=vns->RUN;
-
-	x = (double*) malloc (vns->DIM * sizeof(double));
-	simplex = (double*) malloc ((vns->DIM +1) * sizeof(double));
-	
-	run = vns->RUN+1;
-
-	t=0;
-	nelmin_cont=0;
-	stop=false;
-	for (i=0; i<vns->DIM;i++) //each dimension
-	{
-		x[i] = randon(vns->LB,vns->UB);
-	}
-
-    	time (&(vns->solv.stime));
-	while(t < vns->TMAX && !stop){
-		/* t++; */
-
-		for(i=0;i<vns->DIM;i++){
-			simplex[i] = x[i]; //inicializa o simplex com indice igual, menos o final
-		}
-		simplex[vns->DIM] = randon(vns->LB,vns->UB); //o ultimo faz aleatorio
-
-		nelmin(vns->DIM, x, x, &fx,  stop_condition , simplex,vns->TMAX - t, &nelmin_cont, &num_restart, &ifault, vns->FUNCTION );
-		t+=nelmin_cont;
-		nelmin_cont = 0;	
-		if(checkisLbUb(x,vns->DIM,vns->LB,vns->UB)){
-			fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t); //<= fx vem do nelmin, so atualiza se mudar pelo checkisLBUL 
-		}
-		/* t = t + nelmin_cont; */
-		
-		/* if(fx == 0.0f){ */
-			/* if(vns->FUNCTION == 8){ */
-			/*        if(-418.0 > fx){ */
-			/* 	printf("Find the best solution before finis2h!\n"); */
-			/* 	stop = true; */
-			/*        }else{ */
-			/* 	       continue; */
-			/*        } */
-			/* }else if(fx < (1E-10)){ */
-			/* printf("Find the best solution before finish!\n"); */
-			/* stop = true; */
-		/* } */
-
-
-			/* printf("Improved with %d avaliation and %.20f value\n",t,fx); */
-
-	}
-
-    	time (&(vns->solv.etime));
-	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
-
-	printf("\n==RUN: %d\n",run);
-	printf("Total number of avaliation with NM: %d\n",t);
-	printf("Best solution found == %g \n",fx);
-
-	vns->solv.c_aval=t;
-	vns->solv.c_aval_best=t;
-	vns->solv.bestfo=fx;
-
-	printf("\n");
-	
-	free(x);
-	free(simplex);
-
-       return (void*)arg;
-	
-}
-
-void *BVNS_NM(void *arg){//VNSM com NM
-	
-	pVNS *vns = arg;
-
-	int t = 0,k=1,i,j;
-	int best_aval = 0;
-	bool stop = false;
-	int shake_cont =0;
-	int vns_cont = 0;
-	double *x,*x2,*y,*r;
-	double fx,fy;
-	int run=vns->RUN;
-	int p=vns->P;
-	int nelmin_cont = 0;
-	double *simplex;
-	int shake_one = 1;
-	int avalmax_aux=0;
-	int num_restart = 0;
-	int ifault = 0;
-
-	simplex = (double*) malloc ((vns->DIM +1) * sizeof(double));
-	x = (double*) malloc (vns->DIM * sizeof(double));
-	x2 = (double*) malloc (vns->DIM * sizeof(double));
-	y = (double*)malloc (vns->DIM * sizeof(double));
-	
-	r = (double*)malloc ( (vns->KMAX+1) *sizeof(double));
-
-	//set wich radii value
-	r[0] = 0.0f;
-	for(j=vns->KMAX;j>=1;j--){
-		r[j] = vns->RADII;
-		vns->RADII*=vns->Q;
-	}
-
-	run = vns->RUN+1;
-	t=0;
-	k=1;
-	vns_cont=0;
-	int vns_geral_cont=0;
-	shake_cont=0;
-	stop=false;
-
-	for (i=0; i<vns->DIM;i++) //each dimension
-	{
-		x[i] = randon(vns->LB,vns->UB);
-	
-	}
-
-	memcpy(x2,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	memcpy(y,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t);//initialize fx 
-    	time (&(vns->solv.stime));
-
-	while(t < vns->TMAX && !stop){
-		k=1;
-		while(k<=vns->KMAX && t< vns->TMAX && !stop){
-
-			//do shake */
-			shake(x, y, r, k,vns->DIM,vns->LB,vns->UB,&shake_cont,vns->RADII_T_FLAG,p,shake_one,1.0f);
-
-			for(i=0;i<vns->DIM;i++){
-				simplex[i] = x[i]; //inicializa o simplex com indice igual, menos o final
-			}
-			simplex[vns->DIM] = randon(vns->LB,vns->UB); //o ultimo faz aleatorio
-
-			if( (vns->TMAX - t) < avalmax_aux){
-				avalmax_aux = vns->TMAX -t;
-			}
-			nelmin(vns->DIM, x, x, &fx,  vns->EPSILON , simplex,avalmax_aux, &nelmin_cont, &num_restart, &ifault, vns->FUNCTION );
-			avalmax_aux = vns->AVAL_MAX;
-			/* printf("nelmin_cont => %d valor => %.2f\n",nelmin_cont,fx); */
-			t+=nelmin_cont;
-			nelmin_cont = 0;	
-			if(checkisLbUb(x,vns->DIM,vns->LB,vns->UB)){
-				fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t); //<= fx vem do nelmin, so atualiza se mudar pelo checkisLBUL 
-			}
-
-			//change neighborhood, x<= receive the best or the same
-			neighborhoodChange(x,x2,&fx,vns->DIM,&k,vns->FUNCTION,&best_aval,&vns_cont,&fy,vns->LB,vns->UB);
-
-			t+=vns_cont;
-			vns_geral_cont+=vns_cont;
-			vns_cont=0;
-			
-			/* if(vns->FUNCTION == 8){ */
-
-			/*        if(-418.0 > fx){ */
-			/* 		printf("Find the best solution before finis2h!\n"); */
-			/* 		stop = true; */
-			/*        }else{ */
-			/* 	       continue; */
-			/*        } */
-
-			/* }else if(fx < (1E-10)){ */
-			/* 	printf("Find the best solution before finish!\n"); */
-			/* 	stop = true; */
-			/* } */
-
-			/* if(fx == fy){ */
-			/* 	printf("Improved with %d avaliation and %.20f value \n",t,fx); */
-			/* } */
-		}
-
-	}
-
-	t--;
-    	time (&(vns->solv.etime));
-	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
-
-	printf("\n==RUN: %d\n",run);
-	/* printf("VNS total number of avaliations : %d\n",vns_geral_cont); */
-	/* printf("NM total number of avaliations: %d\n",nm_geral_cont); */
-	printf("Total number of avaliation: %d\n",t);
-	printf("Best solution found == %g\n",fx);
-	printf("Time: == %.0f seconds\n",vns->solv.t_total);
-
-	vns->solv.c_aval=t;
-	vns->solv.c_aval_best=best_aval;
-	vns->solv.bestfo=fx;
-
-	printf("\n");
-	
-	free(x);
-	free(x2);
-	free(y);
-	free(r);
-
-       return (void*)arg;
-	
-}
-
-void *RVNS(void *arg){//Reduced VNS
-	
-	pVNS *vns = arg;
-
-	int t = 0,k=1,j;
-	int best_aval = 0;
-	int shake_one = 1;
-	bool stop = false;
-	int avalmax_aux=0;
-	int shake_cont =0;
-	int vns_cont = 0;
-	double *x,*x2,*y,*r;
-	double fx,fy;
-	int run=vns->RUN;
-	int p = vns->P;
-	x =  malloc (vns->DIM * sizeof(double));
-	x2 =  malloc (vns->DIM * sizeof(double));
-	y = malloc (vns->DIM * sizeof(double));
-	
-
-	//GRAFICOS
-	//INICIO Grafico Convergencia inicializacao
-#ifdef GRAFICO
-	char *vns_plot_k;
-	/* char *vns_plot_best; */
-	char file_name[100];	
-	
-	if(GRAFICO == 1){
-		/* vns_plot_best = (char *) malloc(sizeof(char) * vns->TMAX * 1000); */
-		sprintf(file_name,"Convergencia/VNS_%d_%d_%d_%d",vns->METHOD,vns->DIM,vns->FUNCTION,vns->RUN);
-	}else if(GRAFICO == 2){
-		vns_plot_k = (char *) malloc(sizeof(char) * vns->TMAX * 1000);
-		sprintf(file_name,"Convergencia/VNS_K_%d_%d_%d_%d",vns->METHOD,vns->DIM,vns->FUNCTION,vns->RUN);
-	}
-#endif
-	//FIM Grafico Convergencia inicializacao
-
-	r = (double*)malloc ( (vns->KMAX+1) *sizeof(double));
-	if(vns->r == NULL)
-		vns->r = (double*)malloc ( (vns->KMAX+1) *sizeof(double));
-	//set wich radii value
-	r[0] = 0.0f;
-	for(j=1;j<=vns->KMAX;j++){
-		r[j] = vns->RADII;
-		vns->r[j] = r[j];
-		vns->RADII*=vns->Q;
-	}
-	/* memcpy(vns->r,r,sizeof(double)* (vns->KMAX + 1)); */
-
-
-	run = vns->RUN+1;
-
-	t=0;
-	k=1;
-	vns_cont=0;
-	avalmax_aux=0;
-	shake_cont=0;
-	stop=false;
-
-	memcpy(x,vns->best,sizeof(double)*vns->DIM);
-	memcpy(x2,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	memcpy(y,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t);//initialize fx 
-	avalmax_aux = vns->AVAL_MAX;
-
-
-	//GRAFICOS
-#ifdef GRAFICO
-	if(GRAFICO == 1){
-		geracao = 0;
-		
-		//melhor fo
-		bestfo_geracoes[execucao][geracao] = fx;
-
-		if(DEBUG){
-			printf("\nMelhor[%d] =>%f\n",geracao,bestfo_geracoes[execucao][geracao]);
-		}
-
-	}else if(GRAFICO == 2){
-		//calcular a media de K para gerar grafico
-		sprintf(vns_plot_k, "%s %d %lf\n ",vns_plot_k,vns_cont,(double)k);
-	}
-#endif	
-	
-
-    	time (&(vns->solv.stime));
-	while(t < vns->TMAX && !stop){
-		k=1;
-		while(k<=vns->KMAX && t< vns->TMAX && !stop){
-			/* t++; */
-			vns_cont++;
-
-			//do shake */
-			/* shake_one(x, y, r, k,vns->KMAX,vns->DIM,vns->LB,vns->UB,&shake_cont,vns->RADII_T_FLAG,p); */
-			shake(x, y, r, k,vns->DIM,vns->LB,vns->UB,&shake_cont,vns->RADII_T_FLAG,p,shake_one,0.5f);
-
-			if( (vns->TMAX - t) < avalmax_aux){
-				avalmax_aux = vns->TMAX -t;
-			}
-			
-			//change neighborhood, x<= receive the best or the same
-			neighborhoodChange(x,y,&fx,vns->DIM,&k,vns->FUNCTION,&best_aval,&t,&fy,vns->LB,vns->UB);
-
-			
-			/* if(fx == 0.0f){ */
-			/* if(vns->FUNCTION == 8){ */
-			/*        if(-418.0 > fx){ */
-			/* 	printf("Find the best solution before finis2h!\n"); */
-			/* 	stop = true; */
-			/*        }else{ */
-			/* 	       continue; */
-			/*        } */
-			/* }else if(fx < (1E-10)){ */
-			/* 	printf("Find the best solution before finish!\n"); */
-			/* 	stop = true; */
-			/* } */
-
-
-			//GRAFICOS
-#ifdef GRAFICO
-			if(GRAFICO == 1 && t%50 ==0){
-
-				geracao++;
-				//melhor fo
-				memcpy(&bestfo_geracoes[execucao][geracao],&fx,sizeof(double));
-
-				if(DEBUG){
-					printf("\nMelhor[%d][%d] =>%f\n",execucao,geracao,bestfo_geracoes[execucao][geracao]);
-				}
-
-			}else if(GRAFICO == 2){
-				//calcular a media de K para gerar grafico
-				/* sprintf(vns_plot_k, "%s %d %lf\n ",vns_plot_k,vns_cont,(double)k); */
-			}
-#endif
-			
-		}
-
-	}
-    	time (&(vns->solv.etime));
-	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
-
-	printf("\n==RUN: %d\n",run);
-	printf("Total number of avaliation: %d\n",t);
-	printf("Best solution found == %g\n",fx);
-	printf("Time: == %.0f seconds\n",vns->solv.t_total);
-
-	vns->solv.c_aval=t;
-	vns->solv.c_aval_best=best_aval;
-	vns->solv.bestfo=fx;
-
-	free(x);
-	free(y);
-	free(r);
-
-       return (void*)arg;
-	
-}
-
-void *BVNS(void *arg){//VNS com HJ
-	
-	pVNS *vns = arg;
-
-	int t = 0,k=1,j;
-	int best_aval = 0;
-	int hooke_cont = 0;
-	bool stop = false;
-	int avalmax_aux=0;
-	int shake_cont =0;
-	int hooke_geral_cont = 0;
-	int vns_cont = 0;
-	double *x,*x2,*y,*r;
-	double fx,fy;
-	int run=vns->RUN;
-	int p = vns->P;
-
-	x = (double*) malloc (vns->DIM * sizeof(double));
-	x2 = (double*) malloc (vns->DIM * sizeof(double));
-	y = (double*)malloc (vns->DIM * sizeof(double));
-	
-	r = (double*)malloc ( (vns->KMAX+1) *sizeof(double));
-       	vns->r = (double*)malloc ( (vns->KMAX+1) *sizeof(double));
-	//set wich radii value
-	r[0] = 0.0f;
-	for(j=1;j<=vns->KMAX;j++){
-		r[j] = vns->RADII;
-		vns->RADII*=vns->Q;
-	}
-	memcpy(vns->r,r,sizeof(double)*vns->KMAX+1);
-
-	run = vns->RUN+1;
-
-	t=0;
-	k=1;
-	vns_cont=0;
-	hooke_cont=0;
-	hooke_geral_cont=0;
-	avalmax_aux=0;
-	shake_cont=0;
-	stop=false;
-
-	memcpy(x,vns->best,sizeof(double)*vns->DIM);
-	memcpy(x2,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	memcpy(y,x,vns->DIM*sizeof(double));//set as start value, just for initialize
-	fx = objfunc(x,&vns->FUNCTION,&vns->DIM,&t);//initialize fx 
-	avalmax_aux = vns->AVAL_MAX;
-
-    	time (&(vns->solv.stime));
-	while(t < vns->TMAX -1 && !stop){
-		k=1;
-		while(k<=vns->KMAX && t< vns->TMAX && !stop){
-			/* t++; */
-			vns_cont++;
-			//do shake */
-			shake_one(x, y, r, k,vns->DIM,vns->LB,vns->UB,&shake_cont,vns->RADII_T_FLAG,p);
-
-			if( (vns->TMAX - t) < avalmax_aux){
-				avalmax_aux = vns->TMAX -t;
-			}
-
-		        shake_cont = hooke(vns->DIM, y, x2, vns->RHO, vns->EPSILON, avalmax_aux, vns->FUNCTION,&hooke_cont); 
-			/* checkisLbUb(x2,vns->DIM,vns->LB,vns->UB); */
-			t += hooke_cont;
-			hooke_geral_cont+=hooke_cont;
-			hooke_cont=0;
-			avalmax_aux = vns->AVAL_MAX;
-
-			//change neighborhood, x<= receive the best or the same
-			neighborhoodChange(x,x2,&fx,vns->DIM,&k,vns->FUNCTION,&best_aval,&t,&fy,vns->LB,vns->UB);
-			
-			/* if(vns->FUNCTION == 8){ */
-			/*        if(-418.0 > fx){ */
-			/* 	printf("Find the best solution before finis2h!\n"); */
-			/* 	stop = true; */
-			/*        }else{ */
-			/* 	       continue; */
-			/*        } */
-			/* }else if(fx < (1E-10)){ */
-			/* 	printf("Find the best solution before finish!\n"); */
-			/* 	stop = true; */
-			/* } */
-		}
-
-	}
-    	time (&(vns->solv.etime));
-	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
-
-	printf("\n==RUN: %d\n",run);
-	printf("VNS total number of avaliations : %d\n",vns_cont);
-	printf("Hooke total number of avaliations: %d\n",hooke_geral_cont);
-	printf("Total number of avaliation: %d\n",t);
-	printf("Best solution found == %g\n",fx);
-	printf("Time: == %.0f seconds\n",vns->solv.t_total);
-
-	vns->solv.c_aval=t;
-	vns->solv.c_aval_best=best_aval;
-	vns->solv.bestfo=fx;
-
-	printf("\n");
-	
-	free(x);
-	free(x2);
-	free(y);
-	free(r);
-
-       return (void*)arg;
-	
-}
-
-void printProgress(double fx,int now,int total){
+void printProgress(double fx,int now,int total){/*{{{*/
 	int i;
 	double percent = (double)(100*now)/total;
 	int i_percent = (int)percent;
@@ -1219,17 +630,17 @@ void printProgress(double fx,int now,int total){
 			printf("=");
 	}
 	printf("> %.2f%% %.20f\r" ,percent,fx);
-}
+}/*}}}*/
 
-void printvector(double* x, const int DIM, char* seq){
+void printvector(double* x, const int DIM, char* seq){/*{{{*/
 	int i;
 	for(i=0;i<DIM;i++){
 		printf(" %s[%d]=%f",seq,i,x[i]);
 	}
 	printf("\n");
-}
+}/*}}}*/
 
-void neighborhoodChange(double* x, double* y, double *fx, const int DIM, int *k, const int FUNCTION, int *best_aval, int *aval, double *fy, int lb, int ub){ 
+void neighborhoodChange(double* x, double* y, double *fx, const int DIM, int *k, const int FUNCTION, int *best_aval, int *aval, double *fy, int lb, int ub){ /*{{{*/
 
 	checkisLbUb(y,DIM,lb,ub);
 
@@ -1243,9 +654,9 @@ void neighborhoodChange(double* x, double* y, double *fx, const int DIM, int *k,
 	}else{
 		*k += 1;
 	}
-}
+}/*}}}*/
 
-void getRange(double lb, double ub,double *lower, double *upper, double new_value){
+void getRange(double lb, double ub,double *lower, double *upper, double new_value){/*{{{*/
 
 	if(ub > new_value){
 		*upper = new_value;
@@ -1258,31 +669,12 @@ void getRange(double lb, double ub,double *lower, double *upper, double new_valu
 	}else{
 		*lower = lb;
 	}
-}
-
-void shake_one(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p){
-	*cont += 1;
-	double aux = randon(lb,ub);
-	double lower;
-	double upper;
-	memcpy(y,x,DIM*sizeof(double));
-	int i = randon(0,DIM);
-
-	while(!lp(x,y,r,know,DIM,RADII_T_FLAG,p))
-	{
-		aux = y[i];
-		getRange(lb,ub,&lower,&upper,aux);
-		while(aux == y[i]){
-			aux = randon(lower,upper);
-		}
-	}
-	y[i]=aux;
-}
+}/*}}}*/
 
 /**
  * max changes == 1, is shake one
  */ 
-void shake(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p, int max_changes, double delta_percent){
+void shake(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p, int max_changes, double delta_percent){/*{{{*/
 	
 	*cont += 1;
 	int i,cont_changes=0;;
@@ -1329,9 +721,9 @@ void shake(double *x, double *y, double *r, int know, const int DIM,double lb, d
 			}
 		}
 	}while(!lp(x,y,r,know,DIM,RADII_T_FLAG,p));
-}
+}/*}}}*/
 
-bool lp(double* x, double* y, double* r, int know, const int DIM, int RADII_T_FLAG, int p){
+bool lp(double* x, double* y, double* r, int know, const int DIM, int RADII_T_FLAG, int p){/*{{{*/
 
 	int i;
 	double sum = 0;
@@ -1372,9 +764,9 @@ bool lp(double* x, double* y, double* r, int know, const int DIM, int RADII_T_FL
 	}
 
 	return false; 
-}
+}/*}}}*/
 
-bool radiiBetween(double *dist, double *r, int know){
+bool radiiBetween(double *dist, double *r, int know){/*{{{*/
 
 	int k_bef = know;
 	k_bef--;
@@ -1384,9 +776,9 @@ bool radiiBetween(double *dist, double *r, int know){
 	}else{
  	       return false;
 	}		
-}
+}/*}}}*/
 
-bool radiiLess(double *dist, double *r, int know){
+bool radiiLess(double *dist, double *r, int know){/*{{{*/
 
 
 	if(*dist < r[know]){
@@ -1394,10 +786,10 @@ bool radiiLess(double *dist, double *r, int know){
 	}else{
  	       return false;
 	}		
-}
+}/*}}}*/
 
 //hooke use
-bool checkisLbUb(double *x, const int DIM,double lb, double ub){
+bool checkisLbUb(double *x, const int DIM,double lb, double ub){/*{{{*/
 	
 	int i=0;
 	bool flag = false;
@@ -1415,9 +807,9 @@ bool checkisLbUb(double *x, const int DIM,double lb, double ub){
 		/* } */
 	}
 	return flag;
-}
+}/*}}}*/
 
-void *PRVNS(void *arg){//Populational Reduced VNS
+void *PRVNS(void *arg){//Populational Reduced VNS/*{{{*/
 
 	pVNS *vns = arg;
 
@@ -1748,7 +1140,7 @@ void *PRVNS(void *arg){//Populational Reduced VNS
 	
 	//when return, return the best of the best
 	return (void*)arg;
-}
+}/*}}}*/
 
 void randomIndexPRVNS(int *r1, int *r2, int *p, pVNS *vns, int i){
 	//usar os whiles separados para tentar melhorar o tempo
@@ -1901,9 +1293,10 @@ void *PPRVNS(void *arg){//Populational Reduced VNS
 
     	time (&(vns->solv.stime));
 	while((iter + 1 < vns->G_MAX) && ((t + vns->VNS_POP) <= vns->TMAX)){
+		
+		etapaPopulacionalPRNS(vns,&t, &best_aval, &best_index, &bestfo, y, &fy, x);
 
 		iter++;
-
 		
 	}
     	time (&(vns->solv.etime));
@@ -1946,7 +1339,7 @@ void *PPRVNS(void *arg){//Populational Reduced VNS
 //legend:	legenda do grafico
 //filename:	nome do arquivo de saida (o grafico) sem extensao. Caso precisar, pode passar caminhos relativos ou completos
 //		aceita caminhos para subdiretorios. Ex graficos/meugrafico
-void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, char *legend, char *filename){
+void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, char *legend, char *filename){/*{{{*/
 
 
 	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
@@ -1986,7 +1379,7 @@ void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, cha
 	fputs("\nquit",gnuplotPipe);
 	fflush(gnuplotPipe);
 	fclose(gnuplotPipe);
-}
+}/*}}}*/
 
 
 // Funcao para gerar um grafico de duas linhas relacionando x/y
@@ -2002,7 +1395,7 @@ void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, cha
 //legend2:		legenda do grafico para o data2
 //filename:		nome do arquivo de saida (o grafico) sem extensao. Caso precisar, pode passar caminhos relativos ou completos
 //			aceita caminhos para subdiretorios. Ex graficos/meugrafico
-void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, char *title,  char *legend1, char *legend2, char *filename){
+void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, char *title,  char *legend1, char *legend2, char *filename){/*{{{*/
 
 	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
 	if(!gnuplotPipe){
@@ -2058,5 +1451,5 @@ void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, ch
 	fflush(gnuplotPipe);
 	fclose(gnuplotPipe);
 
-}
+}/*}}}*/
 

@@ -1,0 +1,63 @@
+***VNS PARAMETERS***
+RUNS = 5
+DIM = 250
+FUNCTION = Rastrigin
+METHOD = 8
+****************
+KMAX = 5
+TMAX = 500000
+Q = 2.800000
+RADII = 0.100000
+RADII_T_FLAG = 1
+METRIC P = 0
+VNS_POP = 50
+ECO_STEP = 5
+EVO_STEP = 50
+****************
+***HOOKE AND JEEVES PARAMETERS***
+AVAL_MAX = 2000
+RHO = 0.500000
+EPSILON = 0.000100
+****************
+
+==RUN: 0
+Total number of avaliation: 500000
+Best solution found == 1628.42
+Time: == 10 seconds
+
+
+==RUN: 1
+Total number of avaliation: 500000
+Best solution found == 1553.86
+Time: == 11 seconds
+
+
+==RUN: 2
+Total number of avaliation: 500000
+Best solution found == 2095.08
+Time: == 11 seconds
+
+
+==RUN: 3
+Total number of avaliation: 500000
+Best solution found == 1328.3
+Time: == 11 seconds
+
+
+==RUN: 4
+Total number of avaliation: 500000
+Best solution found == 2082.46
+Time: == 11 seconds
+
+FO Standard Deviation: 303.2906170842
+Time Standard Deviation: 0.400000
+Iteration Standard Deviation:  0.000
+FO mean: 1737.6234704691
+Time mean: 10.800000
+Iteration mean: 500000.000
+FO best: 1328.2991197812
+Time best: 10.000000
+Iteration count when found best: 24399
+Iteration best: 500000
+End running
+

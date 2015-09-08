@@ -203,18 +203,25 @@ double objfunc(double sol[],const int* FUNCTION, const int* DIM, int *cont)/*{{{
 
 		case 0: //Rastrigin
 			return rastrigin(sol,*DIM);
+			break;
 		case 1: //Schaffer
 			return schaffer(sol,*DIM);
+			break;
 		case 2: //Griewank
 			return griewank(sol,*DIM);
+			break;
 		case 3: //Ackley
 			return ackley(sol,*DIM);
+			break;
 		case 4: //Rosenbrock
 			return rosenbrock(sol,*DIM);
+			break;
 		case 5: //Sphere
 			return sphere(sol,*DIM);
+			break;
 		case 6: //MPE
 			return mpe(sol,*DIM);
+			break;
 		case 7: //SCHAFFER_F6
 			return schaffer_f6(sol,*DIM);
 			break;
