@@ -9,6 +9,7 @@
         To run: ./algorithm input.in
  */
 
+//Includes and defines/*{{{*/
 #ifndef max
 #define	max(x, y)	((x) > (y) ? (x) : (y))
 #endif
@@ -22,6 +23,11 @@ typedef int bool;
 #define false 0
 #define FAIL 0
 
+//Testes Diversidade PRVNS
+#define DEBUG  0 //1=> info, 2=> all
+#define GRAFICO  0//1=> convergencia pop, 2=> k
+
+#include <pthread.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,11 +39,9 @@ typedef int bool;
 #include <unistd.h>
 #include <pthread.h>
 #include <unistd.h> /* sleep() */
-#include <string.h>
+#include <string.h>/*}}}*/
 
-
-
-
+//Solution structs/*{{{*/
 typedef struct _VNS_SOLUTION
 {
 	double bestfo;         //best fo value
@@ -75,21 +79,17 @@ typedef struct _VNS
 	double DELTA_MUTATION;
 	int G_MAX;
 	double PC; //probabilidade de crossover
-}pVNS;
+}pVNS;/*}}}*/
 
-//Testes Diversidade PRVNS
-#define DEBUG  0 //1=> info, 2=> all
-#define GRAFICO  0//1=> convergencia pop, 2=> k
-
+//global variables for graphics only/*{{{*/
 double **fo_geracoes; //fo_geracoes[RUN][Ger]; Ger < G_MAX
 double *fo_mediaGeracoes; //fo_mediaGeracoes[Ger]; Ger < G_MAX
 double **bestfo_geracoes; //bestfo_geracoes[Ger]; Ger < G_MAX
 double *bestfo_mediaGeracoes; //bestfo_mediaGeracoes[Ger]; Ger < G_MAX
 int execucao = -1;
-int geracao=-1;
+int geracao=-1;/*}}}*/
 
-
-//Functions declarations
+//Functions declarations/*{{{*/
 double randon( double inferior, double superior);
 //VNS
 bool radiiBetween(double *max, double *r, int know);
@@ -102,7 +102,8 @@ bool lpInf(double* x, double* y, double* r, int know, const int DIM,int RADII_T_
 void neighborhoodChange(double* x, double* y, double *fx, const int DIM, int *k, const int FUNCTION, int *best_aval, int *aval, double *fy, int lb, int ub);
 void *PRVNS(void *arg);
 
-void *PPRVNS(void *arg);//Parallel Populational Reduced VNS
+void *PPRVNS_Island(void *arg);//Parallel Populational Reduced VNS
+void *PPRVNS_Master(void *arg);//MASTER Paralel Populational Reduced VNS
 void evolucaoVizinhancaPRNS(int *r1, int *r2, int *p, pVNS *vns, int i, double *y, pVNS **x);
 void randomIndexPRVNS(int *r1, int *r2, int *p, pVNS *vns, int i);
 void trocaVizinhancaPRNS(pVNS *vns, int i, int *t, int *best_aval, int *best_index, double *bestfo, double *y, double *fy, pVNS **x);
@@ -118,17 +119,19 @@ void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, ch
 void printProgress(double fx,int now,int total);
 int getParametersVNS(FILE *file, pVNS *vns);
 void showParametersVNS(pVNS *vns);
-int f(double x1, int FUNCTION);
+int f(double x1, int FUNCTION);/*}}}*/
 
-double randon( double inferior, double superior)
+double randon( double inferior, double superior)/*{{{*/
 {
 //  double aux = (float)inferior + ((superior - inferior)*rand()/(RAND_MAX+1.0));
-  double aux = (double)inferior + ((superior - inferior)*((double)MT_randInt(RAND_MAX)/((double)RAND_MAX+1.0)));
+   /* double aux = (double)inferior + ((superior - inferior)*((double)MT_randInt(RAND_MAX)/((double)RAND_MAX+1.0))); */
+  double aux = (float)inferior + ((superior - inferior)*rand()/(RAND_MAX+1.0));
+
   /* printf("min=%f max=%f rand=%f\n",inferior,superior,aux); */
   return aux;
-}
+}/*}}}*/
 
-/*Main program of the search algorithm*/
+/*Main program of the search algorithm*//*{{{*/
 int main(int argc, char **argv)
 {
 	srand(time(NULL));
@@ -180,10 +183,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	//executa o metodo escolhido pelo arquivo de entrada
-	
-	//aloca para graficos
-	if(GRAFICO){
+	if(GRAFICO){//aloca para graficos/*{{{*/
 		fo_geracoes = (double**) malloc(sizeof(double*) * RUN + 2);
 		bestfo_geracoes = (double**) malloc(sizeof(double*) * RUN + 2);
 		for(i=0;i<RUN;i++){
@@ -202,29 +202,16 @@ int main(int argc, char **argv)
 				fo_mediaGeracoes = (double*) malloc(sizeof(double) * vns_run->TMAX + 2);
 				bestfo_mediaGeracoes = (double*) malloc(sizeof(double) * vns_run->TMAX + 2);
 			}
-	}	
+	}	/*}}}*/
 
 
+	//executa o metodo escolhido pelo arquivo de entrada
 	double *r = (double*)malloc ( (vns_run->KMAX+1) *sizeof(double));
 	double radii = vns_run->RADII;
 	switch(vns_run->METHOD)
 	{
-		case 3:
-		case 4:
-		case 5:
-			printf("Valores de raio usando PG e razao %f:\n",vns_run->Q);
-			//set wich radii value
-			r[0] = 0.0f;
-			for(j=1;j<=vns_run->KMAX;j++){
-				r[j] = radii;
-				radii*=vns_run->Q;
-			}
-			for(j=1;j<=vns_run->KMAX;j++){
-				printf("k_%d => radii=%f \n",j,r[j]);
-			}
-			break;
-
 		case 6:
+		case 8:
 			printf("Valores de raio usando PG e razao %f:\n",vns_run->Q);
 			r[0] = 0.1f;
 			r[1] = 0.3f;
@@ -239,19 +226,18 @@ int main(int argc, char **argv)
 
 	for(i=0;i<maxr;i++){
 
-		if(GRAFICO){
+		if(GRAFICO){/*{{{*/
 			execucao++;
-		}
+		}/*}}}*/
 
 		switch (vns_run->METHOD) {
 
 		case 6: //PRVNS
-
 			sol[i] = PRVNS((void*)sol[i]);
 			break;
 		case 8: //PPRVNS
 
-			sol[i] = PPRVNS((void*)sol[i]);
+			sol[i] = PPRVNS_Master((void*)sol[i]);
 			break;
 			
 		default:
@@ -261,7 +247,7 @@ int main(int argc, char **argv)
 
 	}
 
-	//GRAFICOS
+	//GRAFICOS/*{{{*/
 	//INICIO Grafico Convergencia inicializacao
 #ifdef GRAFICO
 	char *vns_plot_best;
@@ -324,8 +310,7 @@ int main(int argc, char **argv)
 		//escreve em arquivo
 		grafico_duas_linhas(vns_plot_best,vns_plot_mean,"Geracoes","FO","PRVNS","Melhor","Media",file_name);
 	}
-#endif
-
+#endif/*}}}*/
 
 	//realiza os calculos necessarios
 	calculateStatistic(sol,maxr);
@@ -337,8 +322,9 @@ int main(int argc, char **argv)
 	free(sol);
 	free(vns_run);
 
+	pthread_exit(NULL);
 	return 0;
-}//end MAIN
+}//end MAIN/*}}}*/
 
 void calculateStatistic(pVNS **sol, int maxr){/*{{{*/
 //faz os calculos necessarios, como media, desvio padrao, etc
@@ -671,11 +657,10 @@ void getRange(double lb, double ub,double *lower, double *upper, double new_valu
 	}
 }/*}}}*/
 
+void shake(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p, int max_changes, double delta_percent){/*{{{*/
 /**
  * max changes == 1, is shake one
  */ 
-void shake(double *x, double *y, double *r, int know, const int DIM,double lb, double ub, int *cont, int RADII_T_FLAG, int p, int max_changes, double delta_percent){/*{{{*/
-	
 	*cont += 1;
 	int i,cont_changes=0;;
 	double aux;
@@ -1142,7 +1127,66 @@ void *PRVNS(void *arg){//Populational Reduced VNS/*{{{*/
 	return (void*)arg;
 }/*}}}*/
 
-void randomIndexPRVNS(int *r1, int *r2, int *p, pVNS *vns, int i){
+//PPRVNS START/*{{{*/
+
+void *PPRVNS_Master(void *arg){//Populational Reduced VNS/*{{{*/
+
+	pVNS *vns = arg;
+	int i,j,t,rc;
+
+	int MIGRATION_INTERVAL = 1;
+	int MIGRATION_PERCENT=5;
+	int ISLANDS = 3;
+	pthread_t islands_thread[ISLANDS];
+	void *status;
+        /* pVNS **islands_sol = (pVNS **) malloc (sizeof (pVNS*)*ISLANDS); */
+        pVNS islands_sol[ISLANDS];// = (pVNS **) malloc (sizeof (pVNS*)*ISLANDS);
+
+		//TODO randon start on thread
+	for(t=0; t<ISLANDS; t++){
+		/* islands_sol[t] = (pVNS*) malloc (sizeof (pVNS)); */
+		memcpy(&islands_sol[t],vns,sizeof(pVNS));
+		/* sol[i]->RUN=i; TODO island ID*/
+
+		islands_sol[t].best = malloc(sizeof(double) * vns->DIM);
+
+		for (j=0; j<vns->DIM;j++) //each dimension
+		{
+			islands_sol[t].best[j] = randon(vns->LB,vns->UB);
+		}
+	}
+
+
+	/* for(i=0;i<MIGRATION_INTERVAL;i++){ */
+
+		for(t=0; t<ISLANDS; t++){
+
+			printf("In PPRVNS_Master: creating thread %d\n", t);
+			rc = pthread_create(&islands_thread[t], NULL, PPRVNS_Island, (void *)&islands_sol[t]);
+			if (rc){
+				printf("ERROR; return code from pthread_create() is %d\n", rc);
+				exit(-1);
+			}
+		}
+
+		for(t=0; t<ISLANDS; t++) {
+			printf("joining tread %d\n",t);
+			rc = pthread_join(islands_thread[t], NULL);
+			if (rc) {
+				printf("ERROR; return code from pthread_join() is %d\n", rc);
+				exit(-1);
+			}
+			
+			printf("Main: completed join with thread %d having a best of %g\n",t, islands_sol[t].solv.bestfo);
+		}
+
+	/* } */
+
+	//TODO return only the best
+	return vns;
+}/*}}}*/
+
+void randomIndexPRVNS(int *r1, int *r2, int *p, pVNS *vns, int i){/*{{{*/
 	//usar os whiles separados para tentar melhorar o tempo
 			//seleciona um por vez pode ser melhor que selecionar todos
 			//e testar no mesmo while
@@ -1157,9 +1201,9 @@ void randomIndexPRVNS(int *r1, int *r2, int *p, pVNS *vns, int i){
 
 			//pos na dim para sempre perturbar
 			*p = randon(0,vns->DIM);
-}
+}/*}}}*/
 
-void evolucaoVizinhancaPRNS(int *r1, int *r2, int *p, pVNS *vns, int i, double *y, pVNS **x){
+void evolucaoVizinhancaPRNS(int *r1, int *r2, int *p, pVNS *vns, int i, double *y, pVNS **x){/*{{{*/
 	int j;
 	//etapa da evolucao diferencial
 	for(j=0;j<vns->DIM;j++){
@@ -1179,9 +1223,9 @@ void evolucaoVizinhancaPRNS(int *r1, int *r2, int *p, pVNS *vns, int i, double *
 			y[j] = vns->LB;
 		}
 	}
-}
+}/*}}}*/
 
-void trocaVizinhancaPRNS(pVNS *vns, int i, int *t, int *best_aval, int *best_index, double *bestfo, double *y, double *fy, pVNS **x){
+void trocaVizinhancaPRNS(pVNS *vns, int i, int *t, int *best_aval, int *best_index, double *bestfo, double *y, double *fy, pVNS **x){/*{{{*/
 
 	//etapa de avaliacao e troca de vizinhanca
 	*fy = objfunc(y,&vns->FUNCTION,&vns->DIM,t);
@@ -1208,9 +1252,9 @@ void trocaVizinhancaPRNS(pVNS *vns, int i, int *t, int *best_aval, int *best_ind
 			x[i]->know = 0; //reinicia k
 		}
 	}
-}
+}/*}}}*/
 
-void etapaPopulacionalPRNS(pVNS *vns,int *t, int *best_aval, int *best_index, double *bestfo, double *y, double *fy, pVNS **x){
+void etapaPopulacionalPRNS(pVNS *vns,int *t, int *best_aval, int *best_index, double *bestfo, double *y, double *fy, pVNS **x){/*{{{*/
 	int i;
 	int r1,r2,p;
 	r1 = 0;
@@ -1223,14 +1267,14 @@ void etapaPopulacionalPRNS(pVNS *vns,int *t, int *best_aval, int *best_index, do
 		trocaVizinhancaPRNS(vns,i,t, best_aval,best_index, bestfo,y, fy, x);
 
 	}
-}
+}/*}}}*/
 
-void *PPRVNS(void *arg){//Populational Reduced VNS
+void *PPRVNS_Island(void *arg){//Populational Reduced VNS/*{{{*/
 
 	pVNS *vns = arg;
 
 	int i,j, t=0,iter=0;
-	int r1,r2,p, best_aval, best_index;
+	int  best_aval, best_index;
 
 	double *y = malloc(sizeof(double) * vns->DIM);
 
@@ -1267,7 +1311,6 @@ void *PPRVNS(void *arg){//Populational Reduced VNS
 	bestfo = x[0]->bestfo;
 	best_aval = t;
 	best_index = 0;
-
 
 	for(i=1;i<vns->VNS_POP;i++){
 		x[i] =  malloc (sizeof (pVNS));
@@ -1323,10 +1366,14 @@ void *PPRVNS(void *arg){//Populational Reduced VNS
 	/* free(r); */
 
 	//when return, return the best of the best
-	return (void*)arg;
-}
 
+	pthread_exit((void*) arg);
+	/* return (void*)arg; */
+}/*}}}*/
 
+//PPRVNS END/*}}}*/
+
+void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, char *legend, char *filename){/*{{{*/
 // Funcao para gerar um grafico de uma linha (apenas uma mesmo) relacionando x/y
 // Junto ao grafico eh salvo um arquivo filename.data com os dados usados para montar o grafico
 //
@@ -1339,8 +1386,6 @@ void *PPRVNS(void *arg){//Populational Reduced VNS
 //legend:	legenda do grafico
 //filename:	nome do arquivo de saida (o grafico) sem extensao. Caso precisar, pode passar caminhos relativos ou completos
 //		aceita caminhos para subdiretorios. Ex graficos/meugrafico
-void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, char *legend, char *filename){/*{{{*/
-
 
 	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
 	if(!gnuplotPipe){
@@ -1381,7 +1426,7 @@ void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, cha
 	fclose(gnuplotPipe);
 }/*}}}*/
 
-
+void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, char *title,  char *legend1, char *legend2, char *filename){/*{{{*/
 // Funcao para gerar um grafico de duas linhas relacionando x/y
 // Junto ao grafico eh salvo um arquivo filename_legend1.data e filename_legend2.data com os dados usados para montar o grafico
 //
@@ -1395,8 +1440,7 @@ void grafico_linhas_x_y(char *data, char *xtitle, char *ytitle, char *title, cha
 //legend2:		legenda do grafico para o data2
 //filename:		nome do arquivo de saida (o grafico) sem extensao. Caso precisar, pode passar caminhos relativos ou completos
 //			aceita caminhos para subdiretorios. Ex graficos/meugrafico
-void grafico_duas_linhas(char *data1,char *data2, char *xtitle, char *ytitle, char *title,  char *legend1, char *legend2, char *filename){/*{{{*/
-
+//
 	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
 	if(!gnuplotPipe){
 		printf("ERROR in gnuplotPipe!\n");
