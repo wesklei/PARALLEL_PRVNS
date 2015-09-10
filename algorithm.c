@@ -42,6 +42,21 @@ typedef int bool;
 #include <string.h>/*}}}*/
 
 //Solution structs/*{{{*/
+
+typedef struct _VNS_ISLAND
+{
+	int id;
+	int neighborhood_id;
+	double **sol_migration; //sol_migration[MIGRATION_PERCENT]
+	pVNS **pop; //pop[POP_SIZE + MIGRATION_PERCENT]	
+	double *best;//[DIM]
+	int best_index;
+	double bestfo;
+	
+	pthread_mutex_t islands_mutex;
+	pVNS *vns_params;
+}pVNS_ISLAND;
+
 typedef struct _VNS_SOLUTION
 {
 	double bestfo;         //best fo value
@@ -51,9 +66,9 @@ typedef struct _VNS_SOLUTION
 	time_t etime;//end time
 	double t_total;//total time
 
-
 }pVNS_SOLUTION;
 
+//global parameters
 typedef struct _VNS
 {
 	int P; /*The metric used, l1,l2,l_inf */
@@ -71,14 +86,19 @@ typedef struct _VNS
 	double Q,RADII,RHO,EPSILON;
 	double *r;
 	int METHOD;
-	pVNS_SOLUTION solv;
 	int ECO_STEP;
 	int EVO_STEP;
 	int VNS_POP;
 	int POP_INDEX;
 	double DELTA_MUTATION;
-	int G_MAX;
+	int G_MAX;	
+	int MIGRATION_PERCENT;
+	int MIGRATION_SIZE;//save the correct %
+	int MIGRATION_INTERVAL;
+	int ISLANDS;
 	double PC; //probabilidade de crossover
+	
+	pVNS_SOLUTION solv;
 }pVNS;/*}}}*/
 
 //global variables for graphics only/*{{{*/
@@ -1131,6 +1151,19 @@ void *PRVNS(void *arg){//Populational Reduced VNS/*{{{*/
 
 void *PPRVNS_Master(void *arg){//Populational Reduced VNS/*{{{*/
 
+/*
+typedef struct _VNS_ISLAND
+{
+	int id;
+	int neighborhood_id;
+	double **sol_migration; //sol_migration[MIGRATION_PERCENT]
+	double **pop; //pop[POP_SIZE + MIGRATION_PERCENT]
+	double *pop_fo; //pop[POP_SIZE + MIGRATION_PERCENT]
+	double *best;
+	int best_index;
+	double bestfo;
+}pVNS_ISLAND;
+*/
 	pVNS *vns = arg;
 	int i,j,t,rc;
 
@@ -1139,26 +1172,72 @@ void *PPRVNS_Master(void *arg){//Populational Reduced VNS/*{{{*/
 	int ISLANDS = 3;
 	pthread_t islands_thread[ISLANDS];
 	void *status;
-        /* pVNS **islands_sol = (pVNS **) malloc (sizeof (pVNS*)*ISLANDS); */
-        pVNS islands_sol[ISLANDS];// = (pVNS **) malloc (sizeof (pVNS*)*ISLANDS);
-
-		//TODO randon start on thread
+    
+    vns->MIGRATION_SIZE = (vns->MIGRATION_PERCENT * 100)/vns->VNS_POP +1;//round up
+    vns->islands_mutex = (pthread_mutex_t *) malloc (sizeof (pthread_mutex_t)*(vns->ISLANDS);
+    vns->islands = (pVNS **) malloc (sizeof (pVNS*)*vns->ISLANDS);
+    
+    pVNS islands_sol[ISLANDS];// = (pVNS **) malloc (sizeof (pVNS*)*ISLANDS);
+			
+	//definir raio
+	vns->r = malloc(sizeof(double) * vns->KMAX);
+	vns->r[0] = 0.1f;
+	vns->r[1] = 0.3f;
+	vns->r[2] = 0.5f;
+	vns->r[3] = 0.7f;
+	vns->r[4] = 0.9f;
+	vns->know = 0;
+	
+	//TODO randon start on thread
 	for(t=0; t<ISLANDS; t++){
-		/* islands_sol[t] = (pVNS*) malloc (sizeof (pVNS)); */
-		memcpy(&islands_sol[t],vns,sizeof(pVNS));
-		/* sol[i]->RUN=i; TODO island ID*/
+		islands_sol[t] = (pVNS *) malloc (sizeof (pVNS));
 
-		islands_sol[t].best = malloc(sizeof(double) * vns->DIM);
+		islands_sol[t].vns_params = (pVNS *) malloc (sizeof (pVNS));
+		memccpy(vns->islands[t].vns_params,vns,sizeof(pVNS));
 
+		islands_sol[t].id = t;
+		islands_sol[t].neighborhood_id = t+1;
+		
+		islands_sol[t].sol_migration = (double **) malloc (sizeof (double*)*vns->MIGRATION_SIZE);
+		for(i=0; i<vns->MIGRATION_SIZE; i++){
+			islands_sol[t].sol_migration[i] = (double *) malloc (sizeof (double)*vns->DIM);
+		}
+		
+		islands_sol[t].pop = (pVNS **) malloc (sizeof (pVNS*)*vns->VNS_POP);
+		for(i=0; i<vns->VNS_POP; i++){
+			islands_sol[t].pop[i] = malloc (sizeof (pVNS));
+		}
+				
+		islands_sol[t].pop[i]->best = malloc(sizeof(double) * vns->DIM);
+		//the start point
 		for (j=0; j<vns->DIM;j++) //each dimension
+		{//TODO continue from her, adjust to pop[i]
+			islands_sol[t].pop[i]->best[j] = randon(vns->LB,vns->UB);
+		}
+
+		//avaliar individuo
+		islands_sol[t].bestfo = objfunc(islands_sol[t].best,&vns->FUNCTION,&vns->DIM,&t);
+		islands_sol[t].best_index = 0;
+
+		for (j=1; j<vns->VNS_POP;j++) //each dimension
 		{
-			islands_sol[t].best[j] = randon(vns->LB,vns->UB);
+				for(i=0;i<vns->DIM;i++){
+					islands_sol[t].pop[j][i] = randon(vns->LB,vns->UB);
+				}
+
+				//evaluate indivi
+				islands_sol[t].pop_fo[j] = objfunc(islands_sol[t].pop[j],&vns->FUNCTION,&vns->DIM,&t);
+
+
+				if(islands_sol[t].pop_fo[j] < bestfo){
+					islands_sol[t].bestfo = islands_sol[t].pop_fo[j];
+					islands_sol[t].best_index = j;
+				}
 		}
 	}
-
+	islands_sol[ISLANDS-1].neighborhood_id = 0;//the last points to first
 
 	/* for(i=0;i<MIGRATION_INTERVAL;i++){ */
-
 		for(t=0; t<ISLANDS; t++){
 
 			printf("In PPRVNS_Master: creating thread %d\n", t);
@@ -1271,8 +1350,9 @@ void etapaPopulacionalPRNS(pVNS *vns,int *t, int *best_aval, int *best_index, do
 
 void *PPRVNS_Island(void *arg){//Populational Reduced VNS/*{{{*/
 
-	pVNS *vns = arg;
-
+	pVNS_ISLAND *vns_island = arg;
+	pVNS vns = vns_island.vns;
+	
 	int i,j, t=0,iter=0;
 	int  best_aval, best_index;
 
@@ -1280,69 +1360,25 @@ void *PPRVNS_Island(void *arg){//Populational Reduced VNS/*{{{*/
 
 	double fy;
 	double bestfo;
-
-	//definir raio
-	vns->r = malloc(sizeof(double) * vns->KMAX);
-	vns->r[0] = 0.1f;
-	vns->r[1] = 0.3f;
-	vns->r[2] = 0.5f;
-	vns->r[3] = 0.7f;
-	vns->r[4] = 0.9f;
-
-	//inicializar populacao
-	pVNS **x = malloc (sizeof (pVNS*) * (vns->VNS_POP +1) );
-
-	//faz o primeira antes para pegar o melhor
-	x[0] =  malloc (sizeof (pVNS));
-
-	x[0]->know = 0;
-	x[0]->best = malloc(sizeof(double) * vns->DIM);
-	//the start point
-	for (j=0; j<vns->DIM;j++) //each dimension
-	{
-		x[0]->best[j] = randon(vns->LB,vns->UB);
-	}
-
-	//avaliar individuo
-	x[0]->bestfo = objfunc(x[0]->best,&vns->FUNCTION,&vns->DIM,&t);
-
-
-	//inicializa o melhor
-	bestfo = x[0]->bestfo;
-	best_aval = t;
-	best_index = 0;
-
-	for(i=1;i<vns->VNS_POP;i++){
-		x[i] =  malloc (sizeof (pVNS));
-
-		x[i]->know = 0;
-		x[i]->best = malloc(sizeof(double) * vns->DIM);
-		//the start point
-		for (j=0; j<vns->DIM;j++) //each dimension
-		{
-			x[i]->best[j] = randon(vns->LB,vns->UB);
-		}
-
-		//evaluate indivi
-		x[i]->bestfo = objfunc(x[i]->best,&vns->FUNCTION,&vns->DIM,&t);
-
-
-		if(x[i]->bestfo < bestfo){
-			bestfo = x[i]->bestfo;
-			best_aval = t;
-			best_index = i;
-		}
-	}
-
-    	time (&(vns->solv.stime));
+	
+    time (&(vns->solv.stime));
 	while((iter + 1 < vns->G_MAX) && ((t + vns->VNS_POP) <= vns->TMAX)){
 		
-		etapaPopulacionalPRNS(vns,&t, &best_aval, &best_index, &bestfo, y, &fy, x);
+		etapaPopulacionalPRNS(vns,&t, &best_aval, &best_index, &bestfo, y, &fy, vns_island->pop);
 
 		iter++;
 		
+		//TODO MIGRATION
+		/*
+		   Lock a mutex prior to updating the value in the shared
+		   structure, and unlock it upon updating.
+		   
+		   pthread_mutex_lock (&mutex[neigh_id]);
+		   pthread_mutex_unlock (&mutex[neigh_id]);
+		 */
+		
 	}
-    	time (&(vns->solv.etime));
+    time (&(vns->solv.etime));
 	vns->solv.t_total = difftime(vns->solv.etime,vns->solv.stime);
 
 	printf("\n==RUN: %d\n",vns->RUN);
@@ -1355,6 +1391,8 @@ void *PPRVNS_Island(void *arg){//Populational Reduced VNS/*{{{*/
 	vns->solv.c_aval=t;
 	vns->solv.c_aval_best=best_aval;
 	vns->solv.bestfo=bestfo;
+
+	//TODO salvar em island struct the best
 
 	printf("\n");
 	
